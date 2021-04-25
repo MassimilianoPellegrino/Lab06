@@ -12,6 +12,8 @@ public class TestModel {
 			System.out.print(r.getLocalita()+"\t");
 		}
 		
+		
+		
 
 	}
 

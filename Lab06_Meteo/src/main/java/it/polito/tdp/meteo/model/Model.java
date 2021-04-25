@@ -1,8 +1,10 @@
 package it.polito.tdp.meteo.model;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import it.polito.tdp.meteo.DAO.MeteoDAO;
 
@@ -19,9 +21,22 @@ public class Model {
 	
 	public Model() {
 		dao = new MeteoDAO();
-		costoMigliore=3000;	
+		costoMigliore=3000;
 	}
 
+	
+	public Set<Citta> getSetCitta(int mese) {
+		List<Rilevamento> rilevamenti = this.dao.getAllRilevamenti();
+		Set<Citta> citta = new LinkedHashSet<>();
+		for(Rilevamento r: rilevamenti) {
+			citta.add(new Citta(r.getLocalita()));
+		}
+		for(Citta c: citta) {
+			c.setRilevamenti(this.dao.getAllRilevamentiLocalitaMese(mese, c.getNome()));
+		}
+		return citta;
+	}
+	
 	public List<Mese> listaMesi(){
 		List<Mese> lista = new ArrayList<>();
 		lista.add(new Mese("Gennaio", 1));
@@ -48,26 +63,29 @@ public class Model {
 	// of course you can change the String output with what you think works best
 	public List<Rilevamento> trovaSequenza(int mese) {
 		
-		itera(1, 0, new ArrayList<Rilevamento>(), COST, dao.getAllRilevamentiLocalitaMese(mese, "Torino"),
-				dao.getAllRilevamentiLocalitaMese(mese, "Milano"), dao.getAllRilevamentiLocalitaMese(mese, "Genova"));
+		itera(0, new ArrayList<Rilevamento>(), COST, this.getSetCitta(mese));
 		
 		return soluzioneMigliore;
 	}
 	
-	public boolean verificaCitta(List<Rilevamento> rilevamenti) {
-		int t=0;
-		int m=0;
-		int g=0;
+	public boolean verificaCitta(List<Rilevamento> rilevamenti, Set<Citta> citta) {
+		
+		for(Citta c: citta) {
+			for(Rilevamento r: rilevamenti) {
+				if(r.getLocalita().equals(c.getNome())) {
+					c.increaseCounter();
+				}
+			}
+			if(c.getCounter()==0 || c.getCounter()>NUMERO_GIORNI_CITTA_MAX) {
+				c.setCounter(0);
+				return false;
+			}
+			c.setCounter(0);
+		}
+		
 		int consec=1;
 		
 		for(int i=0; i<rilevamenti.size(); i++) {
-			if(rilevamenti.get(i).getLocalita().equals("Torino"))
-				t++;
-			if(rilevamenti.get(i).getLocalita().equals("Milano"))
-				m++;
-			if(rilevamenti.get(i).getLocalita().equals("Genova"))
-				g++;
-			
 			if(i>0) {
 				if(rilevamenti.get(i).getLocalita().equals(rilevamenti.get(i-1).getLocalita()))
 					consec++;
@@ -76,19 +94,14 @@ public class Model {
 				else
 					return false;
 			}
-			
-			
 		}
 		
-		if(t>0 && m>0 && g>0 && t<=NUMERO_GIORNI_CITTA_MAX && m<=NUMERO_GIORNI_CITTA_MAX && g<=NUMERO_GIORNI_CITTA_MAX)
-			return true;
-		
-		return false;
+		return true;
 	}
 	
-	public void itera(int giorniConsec, int livello, List<Rilevamento> parziale, int costo, List<Rilevamento> listT, List<Rilevamento> listM, List<Rilevamento> listG ) {
+	public void itera(int livello, List<Rilevamento> parziale, int costo, Set<Citta> setCitta) {
 		if(livello==NUMERO_GIORNI_TOTALI) {
-			if(costo<costoMigliore && verificaCitta(parziale)) {
+			if(costo<costoMigliore && verificaCitta(parziale, setCitta)) {
 				soluzioneMigliore = new ArrayList<>(parziale);
 				costoMigliore=costo;
 			}
@@ -98,53 +111,23 @@ public class Model {
 			return;
 		}
 		
-		boolean spostamento = false;
-		
-		Rilevamento rilT = listT.get(livello);
-		int umT = rilT.getUmidita();
-		costo+=umT;
-		if(parziale.size()>0 && !parziale.get(livello-1).getLocalita().equals("Torino")) {
-			costo+=COST;
-			spostamento=true;
+		for(Citta c: setCitta) {
+			boolean spostamento = false;
+			Rilevamento ril = c.getRilevamenti().get(livello);
+			int um = ril.getUmidita();
+			costo+=um;
+			if(parziale.size()>0 && !parziale.get(livello-1).getLocalita().equals(c.getNome())) {
+				costo+=COST;
+				spostamento=true;
+			}
+			parziale.add(ril);
+			itera(livello+1, parziale, costo, setCitta);
+			parziale.remove(ril);
+			if(spostamento)
+				costo-=COST;
+			costo-=um;
+			spostamento = false;
 		}
-		parziale.add(rilT);
-		itera(giorniConsec, livello+1, parziale, costo, listT, listM, listG);
-		parziale.remove(rilT);
-		if(spostamento)
-			costo-=COST;
-		costo-=umT;
-		spostamento = false;
-		
-		Rilevamento rilM = listM.get(livello);
-		int umM = rilM.getUmidita();
-		costo+=umM;
-		if(parziale.size()>0 && !parziale.get(livello-1).getLocalita().equals("Milano")) {
-			costo+=COST;
-			spostamento=true;
-		}
-		parziale.add(rilM);
-		itera(giorniConsec, livello+1, parziale, costo, listT, listM, listG);
-		parziale.remove(rilM);
-		if(spostamento)
-			costo-=COST;
-		costo-=umM;
-		spostamento = false;
-
-		
-		Rilevamento rilG = listG.get(livello);
-		int umG = rilG.getUmidita();
-		costo+=umG;
-		if(parziale.size()>0 && !parziale.get(livello-1).getLocalita().equals("Genova")) {
-			costo+=COST;
-			spostamento=true;
-		}
-		parziale.add(rilG);
-		itera(giorniConsec, livello+1, parziale, costo, listT, listM, listG);
-		parziale.remove(rilG);
-		if(spostamento)
-			costo-=COST;
-		costo-=umG;
-		spostamento = false;
 
 	}
 	
