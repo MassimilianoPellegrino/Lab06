@@ -19,7 +19,6 @@ public class Model {
 	
 	public Model() {
 		dao = new MeteoDAO();
-		costoMigliore=3000;	
 	}
 
 	public List<Mese> listaMesi(){
@@ -48,8 +47,14 @@ public class Model {
 	// of course you can change the String output with what you think works best
 	public List<Rilevamento> trovaSequenza(int mese) {
 		
+		costoMigliore=3000;	
+
+		
 		itera(1, 0, new ArrayList<Rilevamento>(), COST, dao.getAllRilevamentiLocalitaMese(mese, "Torino"),
 				dao.getAllRilevamentiLocalitaMese(mese, "Milano"), dao.getAllRilevamentiLocalitaMese(mese, "Genova"));
+		
+		costoMigliore=3000;	
+
 		
 		return soluzioneMigliore;
 	}
