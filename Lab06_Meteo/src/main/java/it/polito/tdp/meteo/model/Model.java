@@ -21,7 +21,6 @@ public class Model {
 	
 	public Model() {
 		dao = new MeteoDAO();
-		costoMigliore=3000;
 	}
 
 	
@@ -63,7 +62,11 @@ public class Model {
 	// of course you can change the String output with what you think works best
 	public List<Rilevamento> trovaSequenza(int mese) {
 		
+		costoMigliore=3000;
+		
 		itera(0, new ArrayList<Rilevamento>(), COST, this.getSetCitta(mese));
+		
+		costoMigliore=3000;
 		
 		return soluzioneMigliore;
 	}
