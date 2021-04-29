@@ -64,9 +64,9 @@ public class Model {
 		
 		costoMigliore=3000;
 		
-		itera(0, new ArrayList<Rilevamento>(), COST, this.getSetCitta(mese));
-		
-		costoMigliore=3000;
+		itera(0, new ArrayList<Rilevamento>(), 0, this.getSetCitta(mese));
+		System.out.println(costoMigliore);
+		//costoMigliore=3000;
 		
 		return soluzioneMigliore;
 	}
